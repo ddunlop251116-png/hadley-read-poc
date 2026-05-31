@@ -5,3 +5,8 @@ hadleyread.db-shm
 hadleyread.db-wal
 server-working-backup.js
 server_backup.js
+.claude/
+.claude.json
+.claude.json.backup
+.CFUserTextEncoding
+.DS_Store
