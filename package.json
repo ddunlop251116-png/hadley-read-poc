@@ -1,0 +1,29 @@
+{
+  "name": "hadley-read-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hadley Read — proof of concept. Speech in (Whisper) → coach (GPT-4o) → speech out (TTS).",
+  "type": "module",
+  "scripts": {
+    "dev":     "vite",
+    "dev:all": "concurrently --kill-others-on-fail --names server,vite --prefix-colors cyan,yellow \"node server.js\" \"vite\"",
+    "build":   "vite build",
+    "start":   "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "openai": "^4.65.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,7 @@
+.env
+node_modules/
+hadleyread.db
+hadleyread.db-shm
+hadleyread.db-wal
+server-working-backup.js
+server_backup.js
