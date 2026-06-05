@@ -405,6 +405,8 @@ function getBaselineProgress(user) {
 function judgeTeaching_quick(transcript, targetWord) {
   return judgeBaseline_quick(transcript, targetWord);
 }
+
+function saveBaselineProgress(userId, progress) {
   db.prepare('UPDATE users SET baseline_progress = ? WHERE id = ?')
     .run(JSON.stringify(progress), userId);
 }
