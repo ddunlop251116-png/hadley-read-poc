@@ -379,25 +379,13 @@ function hashPin(pin) {
 
 function generateToken() { return randomBytes(32).toString('hex'); }
 
-// Tokens stored in DB so they survive server restarts.
-// Table created inline — no migration needed.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tokens (
-    token      TEXT    PRIMARY KEY,
-    user_id    INTEGER NOT NULL REFERENCES users(id),
-    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
-  )
-`);
-
-function storeToken(token, userId) {
-  db.prepare('INSERT OR REPLACE INTO tokens (token, user_id) VALUES (?, ?)').run(token, userId);
-}
+const tokenStore = new Map(); // token → userId
 
 function requireAuth(req, res, next) {
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  const row   = db.prepare('SELECT user_id FROM tokens WHERE token = ?').get(token);
-  if (!row) return res.status(401).json({ error: 'Not authenticated' });
-  req.userId = row.user_id;
+  const userId = tokenStore.get(token);
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+  req.userId = userId;
   next();
 }
 
@@ -412,33 +400,55 @@ function getBaselineProgress(user) {
   catch(e) { return { wordIndex: 0, results: [] }; }
 }
 
-function saveBaselineProgress(userId, progress) {
+// Quick teaching judgement — same generous Whisper-aware logic as the baseline version.
+// Returns 'correct' if the transcript clearly contains the target word, null otherwise.
+function judgeTeaching_quick(transcript, targetWord) {
+  return judgeBaseline_quick(transcript, targetWord);
+}
   db.prepare('UPDATE users SET baseline_progress = ? WHERE id = ?')
     .run(JSON.stringify(progress), userId);
 }
 
 // Quick string match — returns 'correct' or null (uncertain, needs GPT-4o judgement)
+// Generous by design: Whisper often returns "I said cat", "Cat.", "the cat", "um, cat"
+// when the user simply said "cat". We catch all of these here before calling GPT-4o.
 function judgeBaseline_quick(transcript, targetWord) {
   const norm   = normalizeWord(transcript);
   const target = normalizeWord(targetWord);
+  if (!target) return null;
+  // Exact match after stripping punctuation/case
   if (norm === target) return 'correct';
-  // Target appears as an isolated word in a longer transcript (Whisper adds filler)
-  const words = transcript.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+  // Target appears anywhere as a whole word in the normalised transcript
+  // e.g. "I said cat" → words = ['i','said','cat'] → includes 'cat'
+  const words = norm.split(/\s+/);
   if (words.includes(target)) return 'correct';
+  // Whisper sometimes returns "Hmm, cat." or "Uh, cat" — target is the last token
+  if (words[words.length - 1] === target) return 'correct';
+  // Whisper sometimes prefixes with "the", "a", "an", "um", "uh", "err"
+  const fillers = new Set(['the','a','an','um','uh','err','oh','so','and','i','said','say','its','it']);
+  const content = words.filter(w => !fillers.has(w));
+  if (content.length === 1 && content[0] === target) return 'correct';
   return null;
 }
 
 // Silent GPT-4o judgement for ambiguous transcripts — returns assessment JSON, no speech
 async function callBaselineJudgement(transcript, targetWord) {
   console.log(`[GPT-4o] callBaselineJudgement — target:"${targetWord}" transcript:"${transcript}"`);
-  const prompt = `Assess whether a non-reader correctly read a word. Return JSON only — no other text.
+  const prompt = `Assess whether a non-reader correctly read a word aloud. Return JSON only — no other text.
+
+IMPORTANT — Whisper transcription artefacts to treat as CORRECT:
+- Whisper often adds filler words: "Um, cat", "I said cat", "The cat", "Uh, cat." — all correct if the target word is clearly present
+- Whisper sometimes repeats: "cat cat" — correct
+- Whisper sometimes capitalises: "Cat" — correct
+- Whisper sometimes adds punctuation or trailing sounds that aren't part of the word
+- When in doubt, lean toward CORRECT — it is much worse to discourage a learner who got it right than to let a close attempt through
 
 Target word: "${targetWord}"
 Whisper transcript: "${transcript}"
 
 {
   "targetWord": "${targetWord}",
-  "heardAs": "<what you think they actually said>",
+  "heardAs": "<what you think they actually said, ignoring filler>",
   "outcome": "correct | close | wrong | unclear",
   "confidence": "high | medium | low",
   "likelyError": "initial_sound | vowel_sound | final_sound | added_sound | omitted_sound | whole_word | unclear | none"
@@ -496,42 +506,9 @@ function getPatternData(phase, pattern) {
   return TEACHING_PATTERNS[phase]?.[pattern] || null;
 }
 
-// Returns an adaptively ordered word list based on the user's error history.
-// Word lists are pre-ordered simple→complex, so position = difficulty proxy.
-function buildWordList(phase, pattern, userId) {
-  const allWords = getPatternData(phase, pattern)?.words ?? [];
-  if (allWords.length === 0) return [];
-  if (!userId) return allWords.slice(0, 8);
-
-  const rows = db.prepare(`
-    SELECT likely_error, COUNT(*) as count FROM attempts
-    WHERE user_id = ? AND phase = ? AND likely_error NOT IN ('none','unclear')
-    GROUP BY likely_error ORDER BY count DESC
-  `).all(userId, phase);
-
-  if (rows.length === 0) return allWords.slice(0, 8);
-
-  let total = 0;
-  const errorCounts = {};
-  for (const r of rows) { errorCounts[r.likely_error] = r.count; total += r.count; }
-  const pct = k => ((errorCounts[k] || 0) / total) * 100;
-
-  const vowelDominant  = pct('vowel_sound') >= 40;
-  const wholeWordHeavy = pct('whole_word')  >= 35;
-  const blendDominant  = pct('initial_sound') + pct('final_sound') >= 50;
-
-  const poolSize = wholeWordHeavy ? Math.ceil(allWords.length * 0.5)
-                 : vowelDominant  ? Math.ceil(allWords.length * 0.6)
-                 : blendDominant  ? Math.ceil(allWords.length * 0.75)
-                 : allWords.length;
-
-  const pool     = allWords.slice(0, poolSize);
-  const selected = pool.slice(0, 8);
-  if (selected.length < 8) selected.push(...allWords.filter(w => !selected.includes(w)).slice(0, 8 - selected.length));
-
-  const profile = wholeWordHeavy ? 'whole_word' : vowelDominant ? 'vowel' : blendDominant ? 'blend' : 'default';
-  console.log(`[buildWordList] userId:${userId} pattern:${pattern} profile:${profile} pool:${poolSize}/${allWords.length}`);
-  return selected;
+// Returns the practice word list for a pattern — 8 words for 3 rounds of practice
+function buildWordList(phase, pattern) {
+  return getPatternData(phase, pattern)?.words.slice(0, 8) ?? [];
 }
 
 function shuffle(arr) {
@@ -627,7 +604,6 @@ Respond ONLY with valid JSON — no text outside the object:
 {
   "speech": "max 2 sentences, under 40 words",
   "wordOutcome": "correct | close | wrong | saved | null",
-  "likelyError": "initial_sound | vowel_sound | final_sound | added_sound | omitted_sound | whole_word | none",
   "targetWord": "the word just attempted, or null",
   "nextAction": "retry_same_word | next_word | save_word | teach_rule | start_review | end_session"
 }
@@ -639,14 +615,8 @@ OUTCOME DEFINITIONS:
 - saved: word has hit the stuck rule (engine will override if needed)
 - null: not responding to a word attempt
 
-LIKELYERROR: identify the specific part that went wrong. Use "none" if correct.
-- initial_sound: wrong first sound(s)
-- vowel_sound: wrong vowel in the middle
-- final_sound: wrong or dropped end sound(s)
-- added_sound: inserted a sound that isn't there
-- omitted_sound: dropped a sound that should be there
-- whole_word: completely wrong — no recognisable part
-- none: correct or unclear
+WHISPER TRANSCRIPTION — BE LENIENT:
+Whisper often adds filler words, repetition, or phrases like "I said X", "the X", "Um, X", "X X" when the user simply said the target word. Treat any transcript where the target word is clearly present as CORRECT unless there is a genuine sound error. It is much worse to mark a correct attempt as wrong than to let a close one through.
 
 SPEECH RULES — NON-NEGOTIABLE:
 - correct → start with exactly "Yep."
@@ -654,7 +624,6 @@ SPEECH RULES — NON-NEGOTIABLE:
 - wrong → start with exactly "Let's slow it down."
 - saved → start with exactly "I've saved that one."
 - second attempt correct → start with exactly "There it is."
-- For close/wrong: name the specific sound concretely — e.g. "The middle sound is the short A, like in cat." Never say "vowel sound" or "middle sound" without demonstrating it.
 - Never say the target word aloud
 - Never use: well done, great job, excellent, amazing, brilliant, fantastic, good job, proud, clever, superb, perfect, awesome
 - Never mention: school, teacher, children, class, lesson, test, phoneme, grapheme, digraph, blend
@@ -756,13 +725,22 @@ function recordAttempt({ userId, sessionId, word, pattern, phase, context = 'iso
   `).run(userId, sessionId, word, pattern, phase, context, attemptNumber, transcript, outcome, confidence, likelyError);
 }
 
-// Mastery levels: 0=Red 1=Orange 2=Green 3=Dark green
+// Mastery levels (spec):
+//   0 = Red       — introduced, not yet reliably correct
+//   1 = Orange    — correct 2+ times, across 2+ sessions
+//   2 = Green     — correct across 3+ sessions (secure)
+//   3 = Dark green — correct across 4+ sessions, at least 7 days since first seen
+//
+// sessions_correct increments once per correct exchange (one call per word per exchange).
 function upsertWordRecord(userId, word, pattern, phase, isCorrect, newStatus) {
   const existing = db.prepare('SELECT * FROM words WHERE user_id = ? AND word = ?').get(userId, word);
+
   if (existing) {
     const status             = newStatus || existing.status;
     const newSessionsCorrect = isCorrect ? existing.sessions_correct + 1 : existing.sessions_correct;
     const newTimesCorrect    = existing.times_correct + (isCorrect ? 1 : 0);
+
+    // Mastery only ever increases
     let mastery = existing.mastery_level;
     if (isCorrect && mastery < 3) {
       const daysSinceFirst = existing.first_seen
@@ -772,15 +750,23 @@ function upsertWordRecord(userId, word, pattern, phase, isCorrect, newStatus) {
       if (mastery < 2 && newSessionsCorrect >= 3)                          mastery = 2;
       if (mastery < 3 && newSessionsCorrect >= 4 && daysSinceFirst >= 7)   mastery = 3;
     }
+
     db.prepare(`
-      UPDATE words SET times_attempted = times_attempted + 1, times_correct = times_correct + ?,
-        sessions_correct = ?, mastery_level = ?, status = ?, last_attempted = datetime('now')
+      UPDATE words
+      SET times_attempted  = times_attempted + 1,
+          times_correct    = times_correct + ?,
+          sessions_correct = ?,
+          mastery_level    = ?,
+          status           = ?,
+          last_attempted   = datetime('now')
       WHERE user_id = ? AND word = ?
     `).run(isCorrect ? 1 : 0, newSessionsCorrect, mastery, status, userId, word);
+
   } else {
     const today = new Date().toISOString().split('T')[0];
     db.prepare(`
-      INSERT INTO words (user_id, word, pattern, phase, times_attempted, times_correct, sessions_correct, mastery_level, status, first_seen, last_attempted)
+      INSERT INTO words
+        (user_id, word, pattern, phase, times_attempted, times_correct, sessions_correct, mastery_level, status, first_seen, last_attempted)
       VALUES (?, ?, ?, ?, 1, ?, ?, 0, ?, ?, datetime('now'))
     `).run(userId, word, pattern, phase, isCorrect ? 1 : 0, isCorrect ? 1 : 0, newStatus || 'learning', today);
   }
@@ -788,11 +774,24 @@ function upsertWordRecord(userId, word, pattern, phase, isCorrect, newStatus) {
 
 const ASKING_SPEECH = "Shall we move on to the next one, or are you done for today?";
 
-// Transitions to sensecheck (every 2 patterns) or asking (every odd pattern)
+// Transitions to sensecheck (every 2 patterns) or asking (every odd pattern).
+// KEY RULE: we write the NEXT pattern to the DB here, as soon as the current one is done.
+// This means if the user closes the app after "shall we move on?", they won't repeat the
+// same pattern next session — the DB already reflects where they should pick up.
 async function handlePatternComplete(res, state, sessionId, userId, lastWordSpeech) {
   const { phase, pattern, wordList, completedPatterns, patternsCompletedThisSession } = state;
   const newCompleted     = [...completedPatterns, { phase, pattern, wordList }];
   const newPatternsCount = patternsCompletedThisSession + 1;
+
+  // Advance the user's position in the DB to the next pattern now.
+  // The "continue" choice handler will also write this (idempotently), but doing it
+  // here ensures the DB is correct even if the user closes the app before tapping.
+  const next = getNextPattern(phase, pattern);
+  if (next) {
+    db.prepare('UPDATE users SET current_phase = ?, current_pattern = ? WHERE id = ?')
+      .run(next.phase, next.pattern, userId);
+    console.log(`[handlePatternComplete] DB advanced → ${next.phase}/${next.pattern}`);
+  }
 
   if (newPatternsCount % 2 === 0) {
     const last2           = newCompleted.slice(-2);
@@ -826,6 +825,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(join(__dirname, 'public')));
 
+app.get('/app', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'app.html'));
+});
+
 // ── Auth: register ─────────────────────────────────────────────────────────────
 app.post('/api/auth/register', (req, res) => {
   const { name, phone, pin } = req.body || {};
@@ -837,7 +840,7 @@ app.post('/api/auth/register', (req, res) => {
   try {
     const result = db.prepare('INSERT INTO users (name, phone, pin_hash) VALUES (?, ?, ?)').run(name.trim(), phone.trim(), hashPin(pin));
     const token  = generateToken();
-    storeToken(token, result.lastInsertRowid);
+    tokenStore.set(token, result.lastInsertRowid);
     res.json({ token, userId: result.lastInsertRowid, name: name.trim() });
   } catch(err) {
     console.error('register error:', err);
@@ -852,7 +855,7 @@ app.post('/api/auth/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
   if (!user || user.pin_hash !== hashPin(pin)) return res.status(401).json({ error: 'Phone number or PIN not recognised' });
   const token = generateToken();
-  storeToken(token, user.id);
+  tokenStore.set(token, user.id);
   res.json({ token, userId: user.id, name: user.name });
 });
 
@@ -893,41 +896,32 @@ app.post('/api/session/start', requireAuth, async (req, res) => {
     }
 
     const { current_phase: phase, current_pattern: pattern } = user;
-    const baseWordList = buildWordList(phase, pattern, userId);
+    const baseWordList = buildWordList(phase, pattern);
     if (baseWordList.length === 0) {
       return res.status(500).json({ error: `No word list found for ${phase} / ${pattern}` });
     }
 
-    // Prepend saved words (up to 3) for a brief revisit at the start of each session
-    const savedRows = db.prepare(`
-      SELECT word, pattern, phase FROM words
-      WHERE user_id = ? AND status = 'saved'
-      ORDER BY last_attempted DESC LIMIT 3
-    `).all(userId);
-
-    // Also prepend flagged_for_review words for this pattern
+    // Prepend any words flagged for review in the previous session (sense check failures).
+    // Cap at 3 so the session doesn't feel like a repeat. Remove dupes from main list.
     const flaggedRows = db.prepare(`
       SELECT word FROM words
       WHERE user_id = ? AND pattern = ? AND status = 'flagged_for_review'
       ORDER BY last_attempted DESC LIMIT 3
     `).all(userId, pattern).map(r => r.word);
 
-    const priorityWords = [...new Set([...flaggedRows, ...savedRows.map(r => r.word)])];
-    const prioritySet   = new Set(priorityWords);
-    const dedupedBase   = baseWordList.filter(w => !prioritySet.has(w));
-    const wordList      = [...priorityWords, ...dedupedBase];
+    const flaggedSet  = new Set(flaggedRows);
+    const dedupedBase = baseWordList.filter(w => !flaggedSet.has(w));
+    const wordList    = [...flaggedRows, ...dedupedBase];
 
-    if (savedRows.length > 0) {
-      console.log(`[session/start] prepending ${savedRows.length} saved word(s): ${savedRows.map(r => r.word).join(', ')}`);
-    }
     if (flaggedRows.length > 0) {
       console.log(`[session/start] prepending ${flaggedRows.length} flagged word(s): ${flaggedRows.join(', ')}`);
+      // Reset their status so they don't repeat every session once done
       db.prepare(`UPDATE words SET status = 'learning' WHERE user_id = ? AND word IN (${flaggedRows.map(() => '?').join(',')})`).run(userId, ...flaggedRows);
     }
 
     const firstWord = wordList[0];
     const { explanation, sound, examples } = getRuleIntroScript(pattern);
-    const listenText     = examples.length ? `Listen... ${examples.join('... ')}.` : null;
+    const listenText     = examples.length ? `Listen — ${examples.join(', ')}.` : null;
     const fullText       = [explanation, listenText].filter(Boolean).join(' ');
     const recordedSound  = sound ? checkForRecordedSound(sound) : null;
     const soundTTSText   = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
@@ -948,25 +942,8 @@ app.post('/api/session/start', requireAuth, async (req, res) => {
       .filter(Boolean)
       .map(buf => buf.toString('base64'));
 
-    // If saved words are being revisited, prepend a short spoken notice
-    let openingAudio = null;
-    let openingText  = null;
-    if (savedRows.length > 0) {
-      const n = savedRows.length;
-      openingText  = n === 1
-        ? "Before we start — let's try a word you saved last time."
-        : `Before we start — let's try ${n} words you saved last time.`;
-      openingAudio = await textToSpeech(openingText);
-    }
-
-    const allSegments = [
-      ...(openingAudio ? [openingAudio.toString('base64')] : []),
-      ...audioSegments,
-    ];
-
-    const fullTutorText = [openingText, fullText].filter(Boolean).join(' ');
-    saveExchange(sessionId, userId, 'assistant', fullTutorText);
-    res.json({ sessionId, tutorText: fullTutorText, audioSegments: allSegments, currentWord: firstWord, pattern });
+    saveExchange(sessionId, userId, 'assistant', fullText);
+    res.json({ sessionId, tutorText: fullText, audioSegments, currentWord: firstWord, pattern });
 
   } catch(err) {
     console.error('session/start error:', err);
@@ -991,9 +968,7 @@ app.post('/api/session/exchange', requireAuth,
 
       // ── Choice (JSON body from asking-mode buttons) ────────────────────────
       if (mimeType === 'application/json') {
-        const { choice } = typeof req.body === 'object' && !Buffer.isBuffer(req.body)
-          ? req.body
-          : JSON.parse(req.body.toString());
+        const { choice } = JSON.parse(req.body.toString());
         const user    = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
         const tState  = sessionStates.get(sessionId);
         console.log(`[choice] userId:${userId} sessionId:${sessionId} choice:${choice} stateMode:${tState?.mode}`);
@@ -1028,11 +1003,11 @@ app.post('/api/session/exchange', requireAuth,
           db.prepare('UPDATE users SET current_phase = ?, current_pattern = ? WHERE id = ?')
             .run(next.phase, next.pattern, userId);
 
-          const newWordList = buildWordList(next.phase, next.pattern, userId);
+          const newWordList = buildWordList(next.phase, next.pattern);
           console.log(`[choice/continue] → ${next.phase}/${next.pattern} | words:${newWordList.length}`);
 
           const { explanation, sound, examples } = getRuleIntroScript(next.pattern);
-          const listenText    = examples.length ? `Listen... ${examples.join('... ')}.` : null;
+          const listenText    = examples.length ? `Listen — ${examples.join(', ')}.` : null;
           const fullText      = [explanation, listenText].filter(Boolean).join(' ');
           const recordedSound = sound ? checkForRecordedSound(sound) : null;
           const soundTTSText  = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
@@ -1147,7 +1122,7 @@ app.post('/api/session/exchange', requireAuth,
       // Reconstruct session state if lost (server restart wipes sessionStates Map)
       let tState = ['round', 'struggling', 'sensecheck'].includes(state?.mode) ? state : null;
       if (!tState && user.baseline_done && user.current_phase && user.current_pattern) {
-        const rebuildList = buildWordList(user.current_phase, user.current_pattern, userId);
+        const rebuildList = buildWordList(user.current_phase, user.current_pattern);
         if (rebuildList.length > 0) {
           console.log(`[exchange] reconstructing state userId:${userId} → ${user.current_phase}/${user.current_pattern}`);
           tState = buildFreshTeachingState(userId, user.current_phase, user.current_pattern, rebuildList);
@@ -1164,29 +1139,20 @@ app.post('/api/session/exchange', requireAuth,
         const currentWord = wordsInRound[currentWordIndex];
         const patternRule = getPatternData(phase, pattern)?.rule ?? '';
 
-        const tutorResult = await callTeachingGPT(currentWord, userTranscript, 1, pattern, phase, patternRule);
+        // Quick check before calling GPT-4o — catches common Whisper artefacts
+        const quickResult = judgeTeaching_quick(userTranscript, currentWord);
+        const tutorResult = quickResult === 'correct'
+          ? { speech: FALLBACKS.correct, wordOutcome: 'correct', targetWord: currentWord, nextAction: 'next_word' }
+          : await callTeachingGPT(currentWord, userTranscript, 1, pattern, phase, patternRule);
         const wordOutcome = tutorResult.wordOutcome === 'saved' ? 'wrong' : tutorResult.wordOutcome;
         const isCorrect   = wordOutcome === 'correct';
 
         const newStruggling = [...strugglingWords];
         if (!isCorrect && !newStruggling.includes(currentWord)) newStruggling.push(currentWord);
 
-        const likelyError = tutorResult.likelyError || 'none';
-        recordAttempt({ userId, sessionId, word: currentWord, pattern, phase, attemptNumber: 1, transcript: userTranscript, outcome: wordOutcome, confidence: 'high', likelyError });
+        recordAttempt({ userId, sessionId, word: currentWord, pattern, phase, attemptNumber: 1, transcript: userTranscript, outcome: wordOutcome, confidence: 'high' });
         upsertWordRecord(userId, currentWord, pattern, phase, isCorrect, 'learning');
         saveExchange(sessionId, userId, 'assistant', tutorResult.speech);
-
-        // If vowel error, append the isolated pattern sound so user hears the correct sound
-        const shouldPlaySound = !isCorrect && likelyError === 'vowel_sound';
-        const patternSoundKey = getRuleIntroScript(pattern).sound;
-        let soundBuf = null;
-        if (shouldPlaySound && patternSoundKey) {
-          soundBuf = checkForRecordedSound(patternSoundKey);
-          if (!soundBuf) {
-            const ttsText = preprocessTTSText(patternSoundKey);
-            if (ttsText) soundBuf = await textToSpeech(ttsText);
-          }
-        }
 
         const updatedState = {
           ...tState,
@@ -1200,20 +1166,16 @@ app.post('/api/session/exchange', requireAuth,
 
         if (!isEndOfRound) {
           sessionStates.set(sessionId, updatedState);
-          const speechAudio = await textToSpeech(tutorResult.speech);
-          const segs = [speechAudio, soundBuf].filter(Boolean).map(b => b.toString('base64'));
-          if (segs.length === 1) return res.json({ userTranscript, tutorText: tutorResult.speech, audio: segs[0], currentWord: wordsInRound[nextIdx], mode: 'round', round: currentRound });
-          return res.json({ userTranscript, tutorText: tutorResult.speech, audioSegments: segs, currentWord: wordsInRound[nextIdx], mode: 'round', round: currentRound });
+          const audio = await textToSpeech(tutorResult.speech);
+          return res.json({ userTranscript, tutorText: tutorResult.speech, audio: audio.toString('base64'), currentWord: wordsInRound[nextIdx], mode: 'round', round: currentRound });
         }
 
         if (currentRound < 3) {
           const nextRound = currentRound + 1;
           const nextWords = shuffle([...wordList]);
           sessionStates.set(sessionId, { ...updatedState, currentRound: nextRound, wordsInRound: nextWords, currentWordIndex: 0 });
-          const speechAudio = await textToSpeech(tutorResult.speech);
-          const segs = [speechAudio, soundBuf].filter(Boolean).map(b => b.toString('base64'));
-          if (segs.length === 1) return res.json({ userTranscript, tutorText: tutorResult.speech, audio: segs[0], currentWord: nextWords[0], mode: 'round', round: nextRound });
-          return res.json({ userTranscript, tutorText: tutorResult.speech, audioSegments: segs, currentWord: nextWords[0], mode: 'round', round: nextRound });
+          const audio = await textToSpeech(tutorResult.speech);
+          return res.json({ userTranscript, tutorText: tutorResult.speech, audio: audio.toString('base64'), currentWord: nextWords[0], mode: 'round', round: nextRound });
         }
 
         // End of round 3
@@ -1237,7 +1199,11 @@ app.post('/api/session/exchange', requireAuth,
         const attemptNum   = prevAttempts + 1;
         const patternRule  = getPatternData(phase, pattern)?.rule ?? '';
 
-        const tutorResult = await callTeachingGPT(currentWord, userTranscript, attemptNum, pattern, phase, patternRule);
+        // Quick check before calling GPT-4o
+        const quickResult = judgeTeaching_quick(userTranscript, currentWord);
+        const tutorResult = quickResult === 'correct'
+          ? { speech: attemptNum > 1 ? FALLBACKS.second_correct : FALLBACKS.correct, wordOutcome: 'correct', targetWord: currentWord, nextAction: 'next_word' }
+          : await callTeachingGPT(currentWord, userTranscript, attemptNum, pattern, phase, patternRule);
         const isCorrect   = tutorResult.wordOutcome === 'correct';
 
         let newRemaining  = [...remainingStruggling];
@@ -1265,7 +1231,6 @@ app.post('/api/session/exchange', requireAuth,
           remainingStruggling: newRemaining,
           additionalAttempts:  newAttempts,
           savedWords:          newSaved,
-          wordsAttempted:      tState.wordsAttempted + 1,
           wordsCorrect:        tState.wordsCorrect + (isCorrect ? 1 : 0),
         };
 
@@ -1285,7 +1250,11 @@ app.post('/api/session/exchange', requireAuth,
         const scEntry     = senseCheckWords[senseCheckIndex];
         const patternRule = getPatternData(scEntry.phase, scEntry.pattern)?.rule ?? '';
 
-        const tutorResult = await callTeachingGPT(scEntry.word, userTranscript, 1, scEntry.pattern, scEntry.phase, patternRule);
+        // Quick check before calling GPT-4o
+        const quickResult = judgeTeaching_quick(userTranscript, scEntry.word);
+        const tutorResult = quickResult === 'correct'
+          ? { speech: FALLBACKS.correct, wordOutcome: 'correct', targetWord: scEntry.word, nextAction: 'next_word' }
+          : await callTeachingGPT(scEntry.word, userTranscript, 1, scEntry.pattern, scEntry.phase, patternRule);
         const isCorrect   = tutorResult.wordOutcome === 'correct';
 
         recordAttempt({ userId, sessionId, word: scEntry.word, pattern: scEntry.pattern, phase: scEntry.phase, attemptNumber: 1, transcript: userTranscript, outcome: tutorResult.wordOutcome, confidence: 'high' });
@@ -1355,6 +1324,47 @@ app.get('/api/progress', requireAuth, (req, res) => {
     console.error('progress error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Waitlist ───────────────────────────────────────────────────────────────────
+app.post('/api/waitlist', (req, res) => {
+  const { name, phone } = req.body || {};
+  if (!name || !phone) return res.status(400).json({ error: 'name and phone required' });
+  db.exec(`CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.prepare('INSERT INTO waitlist (name, phone) VALUES (?, ?)').run(name.trim(), phone.trim());
+  res.json({ ok: true });
+});
+
+app.get('/admin/waitlist', (req, res) => {
+  const password = req.query.password;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).send('Unauthorised');
+  }
+  const entries = db.prepare('SELECT name, phone, created_at FROM waitlist ORDER BY created_at DESC').all();
+  const rows = entries.map(e => `
+    <tr>
+      <td>${e.name}</td>
+      <td>${e.phone}</td>
+      <td>${e.created_at}</td>
+    </tr>
+  `).join('');
+  res.send(`
+    <html>
+      <head><title>Waitlist</title></head>
+      <body style="font-family:sans-serif;padding:40px;max-width:600px">
+        <h2>Waitlist (${entries.length})</h2>
+        <table border="1" cellpadding="8" cellspacing="0">
+          <tr><th>Name</th><th>Phone</th><th>Signed up</th></tr>
+          ${rows}
+        </table>
+      </body>
+    </html>
+  `);
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────

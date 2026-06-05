@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HadleyRead — Read with confidence.</title>
+<meta name="description" content="A private AI reading tutor for adults. Voice-first, judgement-free, five minutes a day.">
+
+<!-- Open Graph -->
+<meta property="og:title" content="HadleyRead — Read with confidence.">
+<meta property="og:description" content="A private AI reading tutor for adults. Voice-first, judgement-free, five minutes a day.">
+<meta property="og:image" content="https://www.hadleyread.co.uk/og-image.png">
+<meta property="og:url" content="https://www.hadleyread.co.uk">
+<meta property="og:type" content="website">
+
+<!-- Twitter/X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HadleyRead — Read with confidence.">
+<meta name="twitter:description" content="A private AI reading tutor for adults. Voice-first, judgement-free, five minutes a day.">
+<meta name="twitter:image" content="https://www.hadleyread.co.uk/og-image.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:      #0F1326;
+    --navy-mid:  #161d35;
+    --purple:    #5A4BBC;
+    --purple-lt: #A78BD7;
+    --peach:     #F2B17A;
+    --ink:       #EEE9FF;
+    --ink-dim:   rgba(238,233,255,0.52);
+    --line:      rgba(238,233,255,0.08);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--navy);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(90,75,188,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 100%, rgba(242,177,122,0.12) 0%, transparent 55%);
+    pointer-events: none; z-index: 0;
+  }
+
+  nav {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-mark { width: 32px; height: 32px; }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--ink); }
+  .logo-text span { color: var(--purple-lt); }
+  .nav-tag {
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--peach); border: 1px solid rgba(242,177,122,0.35);
+    padding: 5px 13px; border-radius: 100px;
+  }
+
+  .hero {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 64px 24px 80px; text-align: center;
+  }
+  .hero-kicker {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--peach); margin-bottom: 24px;
+    opacity: 0; animation: fadeUp 0.5s ease forwards 0.1s;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
+    max-width: 12ch; margin-bottom: 36px;
+    opacity: 0; animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+  .hero h1 em { font-style: italic; color: var(--purple-lt); }
+
+  .video-wrap {
+    position: relative; width: 100%; max-width: 760px;
+    border-radius: 16px; overflow: hidden; margin: 0 auto 52px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,215,0.15);
+    opacity: 0; animation: fadeUp 0.7s ease forwards 0.3s;
+  }
+  .video-wrap video { display: block; width: 100%; background: var(--navy-mid); }
+
+  .hero-form {
+    opacity: 0; animation: fadeUp 0.6s ease forwards 0.45s;
+    display: flex; flex-direction: column; align-items: center; width: 100%;
+  }
+  .form-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: center; max-width: 500px; width: 100%;
+  }
+  input[type="text"], input[type="tel"] {
+    flex: 1; min-width: 155px;
+    background: rgba(238,233,255,0.07);
+    border: 1px solid rgba(238,233,255,0.14);
+    border-radius: 8px; padding: 13px 18px;
+    font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    color: var(--ink); outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  input::placeholder { color: var(--ink-dim); }
+  input:focus { border-color: rgba(167,139,215,0.5); background: rgba(238,233,255,0.1); }
+  .btn {
+    background: linear-gradient(135deg, var(--purple) 0%, #7B68CC 100%);
+    color: #fff; border: none; border-radius: 8px; padding: 13px 28px;
+    font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 500;
+    letter-spacing: 0.03em; cursor: pointer; white-space: nowrap;
+    transition: opacity 0.2s, transform 0.15s;
+    box-shadow: 0 4px 20px rgba(90,75,188,0.35);
+  }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .form-note { margin-top: 13px; font-size: 0.78rem; color: var(--ink-dim); }
+  .success-msg {
+    display: none; margin-top: 16px; padding: 12px 20px;
+    background: rgba(167,139,215,0.12); border: 1px solid rgba(167,139,215,0.3);
+    border-radius: 8px; font-size: 0.88rem; color: var(--purple-lt);
+  }
+
+  hr { border: none; border-top: 1px solid var(--line); margin: 0 48px; position: relative; z-index: 1; }
+
+  .section { position: relative; z-index: 1; padding: 80px 48px; max-width: 1060px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--peach); margin-bottom: 44px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::before { content: ''; width: 28px; height: 1px; background: var(--peach); display: block; }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2px; }
+  .step { background: var(--navy-mid); padding: 36px 28px; transition: background 0.2s; }
+  .step:first-child { border-radius: 10px 0 0 10px; }
+  .step:last-child  { border-radius: 0 10px 10px 0; }
+  .step:hover { background: #1c2442; }
+  .step-num { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 900; color: rgba(167,139,215,0.18); margin-bottom: 16px; line-height: 1; }
+  .step h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; color: var(--ink); }
+  .step p { font-size: 0.87rem; color: var(--ink-dim); line-height: 1.65; }
+
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border-radius: 10px; overflow: hidden; }
+  .diff-col { background: var(--navy-mid); padding: 36px 32px; }
+  .diff-col h4 { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 22px; }
+  .diff-col.not h4 { color: rgba(242,177,122,0.5); }
+  .diff-col.yes h4 { color: var(--purple-lt); }
+  .diff-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .diff-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; color: var(--ink-dim); line-height: 1.5; }
+  .diff-list li::before { content: 'x'; flex-shrink: 0; margin-top: 1px; color: rgba(242,177,122,0.4); font-weight: 400; }
+  .diff-col.yes .diff-list li::before { content: 'o'; color: var(--purple-lt); }
+
+  .cta-band { position: relative; z-index: 1; padding: 90px 24px; text-align: center; }
+  .cta-band::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(90,75,188,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-band h2 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; line-height: 1.1; margin-bottom: 14px; }
+  .cta-band h2 em { font-style: italic; color: var(--purple-lt); }
+  .cta-band > p { color: var(--ink-dim); font-size: 0.95rem; margin-bottom: 36px; }
+  .cta-form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; max-width: 460px; margin: 0 auto; }
+  .spots { margin-top: 14px; font-size: 0.78rem; color: var(--ink-dim); }
+  .spots strong { color: var(--peach); font-weight: 500; }
+
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--line); padding: 28px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  footer p { font-size: 0.75rem; color: var(--ink-dim); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.55s ease, transform 0.55s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    nav { padding: 18px 20px; }
+    .hero { padding: 48px 16px 64px; }
+    .section { padding: 60px 20px; }
+    hr { margin: 0 20px; }
+    .steps { grid-template-columns: 1fr; }
+    .step:first-child { border-radius: 10px 10px 0 0; }
+    .step:last-child  { border-radius: 0 0 10px 10px; }
+    .diff-grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">
+    <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F2B17A"/><stop offset="100%" stop-color="#A78BD7"/></linearGradient></defs>
+      <rect x="8" y="4" width="8" height="22" rx="2" fill="url(#lg)"/>
+      <rect x="24" y="4" width="8" height="22" rx="2" fill="url(#lg)"/>
+      <path d="M8 26 Q20 32 32 26" stroke="url(#lg)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <span class="logo-text">Hadley<span>read</span></span>
+  </a>
+  <div class="nav-tag">Private Beta — 10 places</div>
+</nav>
+
+<section class="hero">
+  <p class="hero-kicker">AI tutor for adults &middot; Voice-first &middot; Free beta</p>
+  <h1>Read with<br><em>confidence.</em></h1>
+
+  <div class="video-wrap">
+    <video
+      src="/HadleyRead_Explainer__Dignity_in_Learning_1080p_caption.mp4"
+      controls
+      playsinline
+      preload="metadata"
+    ></video>
+  </div>
+
+  <div class="hero-form">
+    <div class="form-row">
+      <input type="text" id="h-name"  placeholder="Your name"     autocomplete="given-name">
+      <input type="tel"  id="h-phone" placeholder="Mobile number"  autocomplete="tel">
+      <button class="btn" id="h-btn" onclick="doSubmit('h')">Join the list</button>
+    </div>
+    <p class="form-note">Free. No commitment. We will be in touch within a few days.</p>
+    <div class="success-msg" id="h-success">You are on the list. We will be in touch shortly.</div>
+  </div>
+</section>
+
+<hr>
+
+<section class="section">
+  <div class="section-label reveal">How it works</div>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <h3>It finds your level</h3>
+      <p>A short voice check sets your starting point. No tests, no scores shown.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <h3>You just talk</h3>
+      <p>Say the word. The tutor responds. No typing, no tapping through screens.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <h3>It learns what helps</h3>
+      <p>HadleyRead tracks where you struggle and comes back to it. Every session adapts.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <h3>Five minutes a day</h3>
+      <p>Real words. Short sessions. Built around the things you actually read.</p>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section class="section">
+  <div class="section-label reveal">The difference</div>
+  <div class="diff-grid reveal">
+    <div class="diff-col not">
+      <h4>Other apps</h4>
+      <ul class="diff-list">
+        <li>Built for children, used by adults</li>
+        <li>Screens full of exercises</li>
+        <li>Feels like going back to school</li>
+        <li>Jargon and badges</li>
+      </ul>
+    </div>
+    <div class="diff-col yes">
+      <h4>HadleyRead</h4>
+      <ul class="diff-list">
+        <li>Built for adults, treats you like one</li>
+        <li>Voice only. Just speak.</li>
+        <li>Private, quiet, no judgement</li>
+        <li>Straight to the point</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <h2>Ten places.<br><em>Completely free.</em></h2>
+  <p>Join the private beta and try it for yourself.</p>
+  <div class="cta-form reveal">
+    <input type="text" id="b-name"  placeholder="Your name"     autocomplete="given-name">
+    <input type="tel"  id="b-phone" placeholder="Mobile number"  autocomplete="tel">
+    <button class="btn" id="b-btn" onclick="doSubmit('b')">Join the list</button>
+  </div>
+  <p class="spots"><strong>Only 10 spots.</strong> We will contact you within a few days.</p>
+  <div class="success-msg" id="b-success" style="max-width:440px;margin:16px auto 0;">You are on the list. We will be in touch shortly.</div>
+</section>
+
+<footer>
+  <a href="#" class="logo">
+    <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F2B17A"/><stop offset="100%" stop-color="#A78BD7"/></linearGradient></defs>
+      <rect x="8" y="4" width="8" height="22" rx="2" fill="url(#lg2)"/>
+      <rect x="24" y="4" width="8" height="22" rx="2" fill="url(#lg2)"/>
+      <path d="M8 26 Q20 32 32 26" stroke="url(#lg2)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <span class="logo-text">Hadley<span>read</span></span>
+  </a>
+  <p>All information treated with complete confidentiality.</p>
+  <p style="font-size:0.7rem;color:rgba(238,233,255,0.2);">2025 HadleyRead</p>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  function doSubmit(p) {
+    const name  = document.getElementById(p + '-name').value.trim();
+    const phone = document.getElementById(p + '-phone').value.trim();
+    const btn   = document.getElementById(p + '-btn');
+    if (!name || !phone) { alert('Please enter your name and mobile number.'); return; }
+    btn.disabled = true; btn.textContent = 'Saving...';
+    // Saves locally for now. Replace with fetch() to /api/waitlist or Formspree.
+    var list = JSON.parse(localStorage.getItem('hr_waitlist') || '[]');
+    list.push({ name: name, phone: phone, time: new Date().toISOString() });
+    localStorage.setItem('hr_waitlist', JSON.stringify(list));
+    setTimeout(function() {
+      btn.textContent = 'Done';
+      document.getElementById(p + '-name').value = '';
+      document.getElementById(p + '-phone').value = '';
+      document.getElementById(p + '-success').style.display = 'block';
+    }, 500);
+  }
+  document.querySelectorAll('input').forEach(function(i) {
+    i.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSubmit(i.id.charAt(0)); });
+  });
+</script>
+</body>
+</html>
