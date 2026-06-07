@@ -842,7 +842,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/', (req, res) => res.sendFile(join(__dirname, 'public', 'hadleyread-landing.html')));
-app.get('/app', (req, res) => res.sendFile(join(__dirname, 'public', 'index.html')));
 
 app.use(express.static(join(__dirname, 'public')));
 
