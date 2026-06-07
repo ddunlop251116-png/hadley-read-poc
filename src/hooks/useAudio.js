@@ -61,7 +61,6 @@ function playOne(base64) {
       cleanup();
       audio.onended = null;
       audio.onerror = null;
-      // Buffer before resolving — prevents mic picking up speaker tail
       setTimeout(resolve, POST_PLAY_BUFFER_MS);
     };
 
@@ -80,15 +79,60 @@ function playOne(base64) {
   });
 }
 
+// Plays a recorded sound segment (base64 MP3) via Web Audio API with boosted
+// gain and reduced playback rate — used for Danielle's phoneme recordings so
+// they play louder and slower than normal TTS segments.
+function playRecordedSound(base64) {
+  return new Promise((resolve, reject) => {
+    try {
+      const ctx     = new (window.AudioContext || window.webkitAudioContext)();
+      const binary  = atob(base64);
+      const bytes   = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      ctx.decodeAudioData(bytes.buffer, (buffer) => {
+        const source = ctx.createBufferSource();
+        const gain   = ctx.createGain();
+
+        source.buffer             = buffer;
+        source.playbackRate.value = 0.75;  // 25% slower
+        gain.gain.value           = 1.5;   // 50% louder
+
+        source.connect(gain);
+        gain.connect(ctx.destination);
+
+        source.onended = () => {
+          setTimeout(resolve, POST_PLAY_BUFFER_MS);
+          ctx.close().catch(() => {});
+        };
+
+        source.start(0);
+      }, (err) => {
+        ctx.close().catch(() => {});
+        reject(err);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 export function useAudio() {
   function play(base64) {
     if (!base64) return Promise.resolve();
     return playOne(base64);
   }
 
+  // segments: array of base64 strings, or objects { data, isRecordedSound }
+  // Pass objects when a segment needs the recorded-sound treatment.
   async function playSegments(segments, silenceMs = 800) {
     for (let i = 0; i < segments.length; i++) {
-      await playOne(segments[i]);
+      const seg = segments[i];
+      if (seg && typeof seg === 'object' && seg.isRecordedSound) {
+        await playRecordedSound(seg.data);
+      } else {
+        await playOne(seg);
+      }
       if (i < segments.length - 1 && silenceMs > 0) {
         await new Promise(r => setTimeout(r, silenceMs));
       }

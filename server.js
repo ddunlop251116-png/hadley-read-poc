@@ -352,49 +352,6 @@ const RULE_INTRO_SCRIPTS = {
 // audio files when recordings are complete. Files will be stored in
 // public/sounds/ named sound_[pattern].mp3 e.g. sound_short_a.mp3
 // When files exist, serve them directly instead of calling TTS for the sound step.
-const SOUND_TTS_MAP = {
-  short_a:       'ah',
-  short_i:       'ih',
-  short_o:       'oh',
-  short_u:       'uh',
-  short_e:       'eh',
-  sh:            'shh',
-  th:            'th',
-  ch:            'chh',
-  ck:            'k',
-  wh:            'w',
-  ph:            'f',
-  ng_end:        'ng',
-  a_e:           'ay',
-  i_e:           'eye',
-  o_e:           'oh',
-  u_e:           'you',
-  ai_ay:         'ay',
-  ea_ee:         'ee',
-  oa_ow:         'oh',
-  oo:            'oo',
-  oo_short:      'uh-oo',
-  igh:           'eye',
-  ou_ow:         'ow',
-  oi_oy:         'oy',
-  au_aw:         'aw',
-  ar:            'ar',
-  or:            'or',
-  er_ir_ur:      'er',
-  er:            'er',
-  ing:           'ing',
-  ed:            'ed',
-  ly:            'lee',
-  tion_sion:     'shun',
-  ment:          'ment',
-};
-
-function preprocessTTSText(soundKey) {
-  const s = SOUND_TTS_MAP[soundKey];
-  if (!s) return null;
-  // Ellipsis causes TTS to pause and speak the sound slowly and clearly
-  return `...${s}...`;
-}
 
 // Returns the pre-recorded sound file as a Buffer if it exists, otherwise null.
 // Checks for .m4a first (recorded files), then .mp3 (legacy).
@@ -941,23 +898,25 @@ app.post('/api/session/start', requireAuth, async (req, res) => {
     const listenText     = examples.length ? `Listen. ...${examples.join('... ...')}...` : null;
     const fullText       = [explanation, listenText].filter(Boolean).join(' ');
     const recordedSound  = sound ? checkForRecordedSound(sound) : null;
-    const soundTTSText   = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
 
     sessionStates.set(sessionId, buildFreshTeachingState(userId, phase, pattern, wordList));
 
+    // Segment order: explanation → "Listen." → recorded sound → example words
+    // "Listen." only included when a recorded sound exists, to introduce it.
     const [audio1, audio2, audio3] = await Promise.all([
       textToSpeech(explanation),
-      recordedSound  ? Promise.resolve(recordedSound)
-        : soundTTSText ? textToSpeech(soundTTSText)
-        : Promise.resolve(null),
-      listenText ? textToSpeech(listenText) : Promise.resolve(null),
+      recordedSound ? textToSpeech('Listen.') : Promise.resolve(null),
+      listenText    ? textToSpeech(listenText) : Promise.resolve(null),
     ]);
 
-    // Send as separate segments — client stitches with PCM silence via Web Audio API,
-    // which avoids the Xing-frame stop issue that breaks concatenated MP3 in <audio>.
-    const audioSegments = [audio1, audio2, audio3]
-      .filter(Boolean)
-      .map(buf => buf.toString('base64'));
+    // Build segments array — recorded sound gets { data, isRecordedSound: true }
+    // so the client plays it via Web Audio API at boosted gain and slower rate.
+    const audioSegments = [
+      audio1 ? audio1.toString('base64') : null,
+      audio2 ? audio2.toString('base64') : null,
+      recordedSound ? { data: recordedSound.toString('base64'), isRecordedSound: true } : null,
+      audio3 ? audio3.toString('base64') : null,
+    ].filter(Boolean);
 
     saveExchange(sessionId, userId, 'assistant', fullText);
     res.json({ sessionId, tutorText: fullText, audioSegments, currentWord: firstWord, pattern });
@@ -1027,7 +986,6 @@ app.post('/api/session/exchange', requireAuth,
           const listenText    = examples.length ? `Listen. ...${examples.join('... ...')}...` : null;
           const fullText      = [explanation, listenText].filter(Boolean).join(' ');
           const recordedSound = sound ? checkForRecordedSound(sound) : null;
-          const soundTTSText  = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
 
           sessionStates.set(sessionId, {
             ...buildFreshTeachingState(userId, next.phase, next.pattern, newWordList),
@@ -1040,12 +998,15 @@ app.post('/api/session/exchange', requireAuth,
 
           const [audio1, audio2, audio3] = await Promise.all([
             textToSpeech(explanation),
-            recordedSound  ? Promise.resolve(recordedSound)
-              : soundTTSText ? textToSpeech(soundTTSText)
-              : Promise.resolve(null),
-            listenText ? textToSpeech(listenText) : Promise.resolve(null),
+            recordedSound ? textToSpeech('Listen.') : Promise.resolve(null),
+            listenText    ? textToSpeech(listenText) : Promise.resolve(null),
           ]);
-          const audioSegments = [audio1, audio2, audio3].filter(Boolean).map(buf => buf.toString('base64'));
+          const audioSegments = [
+            audio1 ? audio1.toString('base64') : null,
+            audio2 ? audio2.toString('base64') : null,
+            recordedSound ? { data: recordedSound.toString('base64'), isRecordedSound: true } : null,
+            audio3 ? audio3.toString('base64') : null,
+          ].filter(Boolean);
           saveExchange(sessionId, userId, 'assistant', fullText);
           return res.json({ sessionId, tutorText: fullText, audioSegments, currentWord: newWordList[0], pattern: next.pattern });
         }
