@@ -1328,6 +1328,8 @@ app.get('/api/progress', requireAuth, (req, res) => {
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
+app.get('/', (req, res) => res.sendFile(join(__dirname, 'public', 'hadleyread-landing.html')));
+app.get('/app', (req, res) => res.sendFile(join(__dirname, 'public', 'index.html')));
 app.listen(PORT, () => {
   console.log(`\nHadleyRead running.`);
   console.log(`Local:   http://localhost:${PORT}`);
