@@ -39,40 +39,46 @@ function goldPulse(span) {
   span.style.transform = 'translateY(0) scale(1.5)';
 }
 
-// Settle back after the pulse
+// Settle back after the pulse — vowel stays prominent
 function goldSettle(span) {
   span.style.color = '#F2B17A';
   span.style.textShadow = '0 0 22px #F2B17A, 0 0 44px rgba(242,177,122,0.5)';
   span.style.transform = 'translateY(0) scale(1.1)';
 }
 
-// Subtle whole-word glow
+// Subtle soft glow — for consonants and whole-word finish state
 function softGlow(span) {
   span.style.color = '#F2B17A';
   span.style.textShadow = '0 0 16px rgba(242,177,122,0.6)';
 }
 
-// CVC — letters appear one by one, vowel pulses at ~1.5 s
+// CVC — letters appear one by one, vowel pulses and stays prominent
+// while the explanation audio plays, consonants join softly much later
 function animCVC(stage, { word, vowelIdx }, timers) {
   const spans = word.split('').map(ch => { const s = makeLetter(ch); stage.appendChild(s); return s; });
   void stage.getBoundingClientRect();
 
-  // Letters appear with 400 ms gaps (3 letters = 800 ms total)
+  // Letters appear with 400 ms gaps (3 letters = 800 ms total, done at 1200 ms)
   spans.forEach((s, i) => timers.push(setTimeout(() => showLetter(s), i * 400)));
 
   const afterAll = spans.length * 400; // 1200 ms
 
-  // Initial gold glow on vowel (~1.3 s)
+  // Initial gold glow on vowel only (~1.3 s)
   timers.push(setTimeout(() => goldGlow(spans[vowelIdx]), afterAll + 100));
 
-  // Strong pulse at 1.5 s — when audio speaks the vowel sound
+  // Strong pulse at ~1.5 s — when audio speaks the vowel sound
   timers.push(setTimeout(() => goldPulse(spans[vowelIdx]), 1500));
 
-  // Settle (~1.9 s)
+  // Settle back (~1.9 s) — vowel holds its glow solo while explanation plays
   timers.push(setTimeout(() => goldSettle(spans[vowelIdx]), 1900));
 
-  // Whole word softly glows (~2.5 s) — stays until audio ends (no auto-hide)
-  timers.push(setTimeout(() => spans.forEach(softGlow), 2500));
+  // Consonants softly join at ~4.5 s — after the vowel has had time to land
+  timers.push(setTimeout(() => {
+    spans.forEach((s, i) => { if (i !== vowelIdx) softGlow(s); });
+  }, 4500));
+
+  // Full whole-word soft glow at ~6 s — near the end of the explanation audio
+  timers.push(setTimeout(() => spans.forEach(softGlow), 6000));
 }
 
 // Blend start — blend letters highlight then pulse, rest of word builds out after

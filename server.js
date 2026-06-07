@@ -938,7 +938,7 @@ app.post('/api/session/start', requireAuth, async (req, res) => {
 
     const firstWord = wordList[0];
     const { explanation, sound, examples } = getRuleIntroScript(pattern);
-    const listenText     = examples.length ? `Listen — ${examples.join(', ')}.` : null;
+    const listenText     = examples.length ? `Listen. ...${examples.join('... ...')}...` : null;
     const fullText       = [explanation, listenText].filter(Boolean).join(' ');
     const recordedSound  = sound ? checkForRecordedSound(sound) : null;
     const soundTTSText   = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
@@ -1024,7 +1024,7 @@ app.post('/api/session/exchange', requireAuth,
           console.log(`[choice/continue] → ${next.phase}/${next.pattern} | words:${newWordList.length}`);
 
           const { explanation, sound, examples } = getRuleIntroScript(next.pattern);
-          const listenText    = examples.length ? `Listen — ${examples.join(', ')}.` : null;
+          const listenText    = examples.length ? `Listen. ...${examples.join('... ...')}...` : null;
           const fullText      = [explanation, listenText].filter(Boolean).join(' ');
           const recordedSound = sound ? checkForRecordedSound(sound) : null;
           const soundTTSText  = (!recordedSound && sound) ? preprocessTTSText(sound) : null;
@@ -1105,7 +1105,7 @@ app.post('/api/session/exchange', requireAuth,
           const completedLevel  = BASELINE_LEVELS[levelIndex];
           const isLastLevel     = levelIndex === BASELINE_LEVELS.length - 1;
 
-          if (correctCount <= 1 || isLastLevel) {
+          if (correctCount <= 1 || (isLastLevel && correctCount >= 2)) {
             // 0–1 correct → stop and teach at this level.
             // All levels passed (isLastLevel + 2–3 correct) → start at phase_9.
             const sp = (correctCount >= 2 && isLastLevel)
