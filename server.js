@@ -205,7 +205,15 @@ const TEACHING_PATTERNS = {
     // simple ch+CVC or CVC+ch → with end cluster or blend
     ch: { rule: 'C and H together make one sound — ch', words: ['chat','chip','chop','chin','much','such','rich','each','inch','check','arch','march','torch','fetch','bench','chest','munch','lunch','bunch','punch'] },
     // simple CVC+ck → with initial blend
-    ck: { rule: 'C and K together at end make one sound — k', words: ['lock','kick','pack','rack','dock','sock','tick','pick','buck','duck','luck','muck','suck','tuck','beck','deck','neck','brick','trick'] },
+    ck:     { rule: 'C and K together at end make one sound — k', words: ['lock','kick','pack','rack','dock','sock','tick','pick','buck','duck','luck','muck','suck','tuck','beck','deck','neck','brick','trick'] },
+    // wh words → longer/less common
+    wh:     { rule: 'W and H together at the start — makes a plain w sound, but spelled with both letters', words: ['when','what','where','which','while','why','wheel','wheat','whip','white','whether','wherever','whenever','whatever'] },
+    // simple ph words → less common
+    ph:     { rule: 'P and H together make an f sound — not p, not h, just f', words: ['phone','photo','phrase','physical','pharmacy','graph','alphabet','trophy','dolphin','nephew','phase','triumph'] },
+    // simple ng ending → longer words
+    ng_end: { rule: 'N and G together at the end make one sound — ng, like a hum through the nose', words: ['ring','sing','long','song','bang','hang','rang','wing','thing','bring','strong','spring','along','belong','among','during','evening','morning'] },
+    // ng embedded mid-word with hard g after
+    ng_mid: { rule: 'N and G in the middle — ng hum, then a hard g sound after it', words: ['finger','anger','hunger','longer','stronger','younger','single','angle','jungle','mangle','England','language','angry','mango'] },
   },
   phase_4_magic_e: {
     // simple Ca_Ce → with end consonant cluster → with initial blend/digraph
@@ -222,7 +230,17 @@ const TEACHING_PATTERNS = {
     ai_ay: { rule: 'A and I or A and Y together make one sound — ay', words: ['play','stay','pain','main','bail','fail','hail','mail','nail','rail','sail','train','chain','snail','trail','claim','drain','spray','brain'] },
     ea_ee: { rule: "E and A or two E's together make one sound — ee", words: ['read','lead','team','mean','feel','deal','heal','leak','beach','reach','teach','clean','sleep','steel','cream','dream','steam','stream','speak'] },
     oa_ow: { rule: 'O and A or O and W together make one sound — oh', words: ['flow','coat','load','goal','show','boat','crow','glow','know','low','slow','grow','own','coast','roast','toast','blow','float','groan'] },
-    oo:    { rule: "Two O's together make one sound — oo", words: ['food','cool','mood','pool','moon','room','boom','doom','loom','zoom','boot','hoot','loot','root','soot','tool','spoon','tooth','proof','smooth'] },
+    oo:       { rule: "Two O's together make one sound — oo", words: ['food','cool','mood','pool','moon','room','boom','doom','loom','zoom','boot','hoot','loot','root','soot','tool','spoon','tooth','proof','smooth'] },
+    // short oo as in book — different from long oo
+    oo_short: { rule: "Two O's together can make a shorter sound — pulled back, like in book not food", words: ['book','look','cook','took','hook','foot','wood','good','hood','stood','brook','shook','understood','notebook','overlook','football','wooden','childhood'] },
+    // igh — i, g, h together, g and h silent
+    igh:      { rule: 'I, G and H together make a long i sound — the g and h are silent', words: ['night','light','right','fight','sight','tight','might','bright','flight','fright','slight','knight','tonight','midnight','highlight','frightened','delighted','lightning'] },
+    // ou/ow diphthong
+    ou_ow:    { rule: 'O and U, or O and W together make an ow sound — like saying ouch', words: ['out','down','town','found','loud','cloud','count','ground','sound','round','brown','crown','power','tower','flower','amount','thousand','throughout'] },
+    // oi/oy diphthong
+    oi_oy:    { rule: 'O and I, or O and Y together make one sound — oy', words: ['oil','boy','coin','join','soil','toy','foil','joy','void','coil','point','joint','noise','choice','voice','avoid','annoy','employ','destroy','appointment'] },
+    // au/aw
+    au_aw:    { rule: 'A and U, or A and W together make one broad sound — aw', words: ['saw','law','jaw','raw','draw','claw','cause','pause','fault','vault','launch','sauce','autumn','always','because','exhaust','daughter','awkward'] },
   },
   phase_6_r_controlled: {
     // short ar words → ar + consonants → with digraph/blend
@@ -240,7 +258,13 @@ const TEACHING_PATTERNS = {
     // agent nouns first, then comparatives simple → complex
     er:  { rule: 'Add ER — someone who does, or comparison', words: ['worker','loader','driver','builder','checker','harder','longer','wider','older','darker','deeper','lower','higher','stronger','younger','cleaner','sharper','lighter','manager'] },
     // simple base + ly → spelling-change cases
-    ly:  { rule: 'Add LY — describes how', words: ['safely','badly','fully','slowly','loudly','really','early','firmly','clearly','daily','weekly','quickly','quietly','nearly','lightly','sharply','deeply','roughly','easily','heavily'] },
+    ly:          { rule: 'Add LY — describes how', words: ['safely','badly','fully','slowly','loudly','really','early','firmly','clearly','daily','weekly','quickly','quietly','nearly','lightly','sharply','deeply','roughly','easily','heavily'] },
+    // tion/sion — shun sound at the end
+    tion_sion:   { rule: 'TION or SION at the end — always makes a shun sound', words: ['station','section','action','nation','option','mention','pension','tension','question','caution','fraction','function','junction','direction','collection','connection','inspection','instruction','permission','possession','discussion','profession','expression','impression'] },
+    // ful/less/ness suffixes
+    ful_less_ness: { rule: 'FUL means full of, LESS means without, NESS turns a describing word into a thing', words: ['helpful','careful','useful','harmful','painful','hopeless','useless','homeless','careless','endless','illness','darkness','fitness','kindness','madness','weakness','awareness','loneliness','breathless','worthless'] },
+    // ment suffix
+    ment:        { rule: 'MENT at the end turns a doing word into a thing', words: ['payment','employment','agreement','statement','treatment','argument','document','equipment','adjustment','appointment','assessment','achievement','announcement','arrangement','development','improvement','establishment','management','requirement','investment'] },
   },
   phase_8_multi_syllable: {
     // familiar/regular two-part words first → less common
@@ -252,7 +276,11 @@ const TEACHING_PATTERNS = {
   },
   phase_9_adult_words: {
     // short/common words first → longer/less frequent
-    general: { rule: "Real adult words — some follow rules, some don't", words: ['message','missed','calling','contact','signal','mobile','search','delete','update','install','payment','balance','account','transfer','charges','receipt','refund','confirm','submit','arrival','journey','delayed','voicemail','settings','blocked','network','storage','battery','connect','download','received','delivered','statement','overdue','cashback','address','postcode','consent','platform','terminal','reserved','available','delivery','tracking','dispatched','employment','occupation','declaration','signature','reference','appointment','prescription','pharmacy','symptoms','treatment','medication','departure','destination','collection','estimated','cancelled'] },
+    general:        { rule: "Real adult words — some follow rules, some don't", words: ['message','missed','calling','contact','signal','mobile','search','delete','update','install','payment','balance','account','transfer','charges','receipt','refund','confirm','submit','arrival','journey','delayed','voicemail','settings','blocked','network','storage','battery','connect','download','received','delivered','statement','overdue','cashback','address','postcode','consent','platform','terminal','reserved','available','delivery','tracking','dispatched','employment','occupation','declaration','signature','reference','appointment','prescription','pharmacy','symptoms','treatment','medication','departure','destination','collection','estimated','cancelled'] },
+    // silent letters — k before n, w before r, silent g, b, t
+    silent_letters: { rule: 'Some letters in a word are completely silent — you see them but do not say them', words: ['knife','know','knock','kneel','knight','write','wrong','wrap','wrist','sign','design','debt','doubt','island','lamb','climb','comb','thumb','castle','whistle','listen','fasten','column','autumn'] },
+    // soft c and g before e, i, y
+    soft_c_g:       { rule: 'C before E, I or Y makes an s sound. G before E, I or Y makes a j sound', words: ['city','centre','circle','cycle','ceiling','certain','cinema','pencil','fancy','giant','gentle','ginger','gym','magic','engine','danger','urgent','agent','generous','original','emergency','digital','energy'] },
   },
 };
 
@@ -285,6 +313,10 @@ const RULE_INTRO_SCRIPTS = {
   th:             { explanation: "T and H together make one sound — th. Put the tip of your tongue just behind your top teeth and push air through.",                                                                                                                      sound: 'th',        examples: ['this', 'with', 'then'] },
   ch:             { explanation: "C and H together make one sound — ch.",                                                                                                                                                                                                   sound: 'ch',        examples: ['chat', 'check', 'chip'] },
   ck:             { explanation: "C and K together at the end of a word make one sound — ck.",                                                                                                                                                                              sound: 'ck',        examples: ['back', 'lock', 'kick'] },
+  wh:             { explanation: "Some words start with W and H together. They make the same sound as plain W — but knowing the spelling matters when you're reading forms or signs. When, where, what, which — they all start with W-H.",                                sound: 'wh',        examples: ['when', 'where', 'what'] },
+  ph:             { explanation: "When P and H appear together they make an F sound — not two separate sounds, just F. You'll see this a lot on forms and in everyday life — phone, photo, pharmacy.",                                                                    sound: 'ph',        examples: ['phone', 'photo', 'phrase'] },
+  ng_end:         { explanation: "When N and G appear together at the end of a word they make one sound — ng. It's a hum through your nose. Ring, song, long.",                                                                                                          sound: 'ng_end',    examples: ['ring', 'song', 'strong'] },
+  ng_mid:         { explanation: "When N and G appear in the middle of a word, there's the ng hum — and then a hard g sound straight after it. Fin-ger. An-ger. Say both parts.",                                                                                       sound: null,        examples: ['finger', 'anger', 'single'] },
   a_e:            { explanation: "When a word ends in a silent E, it changes the vowel in the middle. The A stops making its short sound and says its name instead — ay. Like the difference between cap and cape.",                                                       sound: 'a_e',       examples: ['name', 'gate', 'safe'] },
   i_e:            { explanation: "A silent E at the end makes the I say its name — eye. Like the difference between bit and bite.",                                                                                                                                         sound: 'i_e',       examples: ['time', 'site', 'fine'] },
   o_e:            { explanation: "A silent E at the end makes the O say its name — oh. Like the difference between hop and hope.",                                                                                                                                          sound: 'o_e',       examples: ['home', 'note', 'code'] },
@@ -293,6 +325,11 @@ const RULE_INTRO_SCRIPTS = {
   ea_ee:          { explanation: "When E and A or two E's appear together they make one sound — ee.",                                                                                                                                                                       sound: 'ea_ee',     examples: ['read', 'keep', 'clean'] },
   oa_ow:          { explanation: "When O and A or O and W appear together they usually make one sound — oh.",                                                                                                                                                               sound: 'oa_ow',     examples: ['road', 'flow', 'coat'] },
   oo:             { explanation: "When two O's appear together they make one sound — oo.",                                                                                                                                                                                  sound: 'oo',        examples: ['tool', 'food', 'cool'] },
+  oo_short:       { explanation: "You've already seen two O's making a long oo sound — like food or cool. But sometimes two O's make a shorter sound, further back in the mouth. Book, look, cook — that's the short oo.",                                               sound: 'oo_short',  examples: ['book', 'look', 'cook'] },
+  igh:            { explanation: "These three letters together — I, G, H — make a long i sound. The G and H are completely silent. Night, light, right — just the long i sound, then the final consonant.",                                                              sound: 'igh',       examples: ['night', 'light', 'right'] },
+  ou_ow:          { explanation: "When O and U appear together, or O and W at the end of a word, they usually make an ow sound — like you've been surprised. Out, down, found — that same sound written two different ways.",                                             sound: 'ou_ow',     examples: ['out', 'down', 'found'] },
+  oi_oy:          { explanation: "When O and I appear together, or O and Y at the end of a word, they make one sound — oy. Oil, coin, boy — that same sound written two different ways.",                                                                                sound: 'oi_oy',     examples: ['oil', 'coin', 'boy'] },
+  au_aw:          { explanation: "When A and U appear together, or A and W, they make a broad open sound — aw. Like you're at the doctor and they ask you to open wide. Cause, saw, draw.",                                                                              sound: 'au_aw',     examples: ['cause', 'saw', 'draw'] },
   ar:             { explanation: "When A is followed by R, the R changes the vowel sound — ar.",                                                                                                                                                                            sound: 'ar',        examples: ['car', 'hard', 'farm'] },
   or:             { explanation: "When O is followed by R, the R changes the vowel sound — or.",                                                                                                                                                                            sound: 'or',        examples: ['for', 'sort', 'short'] },
   er_ir_ur:       { explanation: "When E, I or U is followed by R they all make the same sound — er.",                                                                                                                                                                     sound: 'er_ir_ur',  examples: ['her', 'first', 'burn'] },
@@ -300,10 +337,15 @@ const RULE_INTRO_SCRIPTS = {
   ed:             { explanation: "When you add ED to the end of a word it means something already happened — ed. Like work becomes worked.",                                                                                                                                sound: 'ed',        examples: ['worked', 'lifted', 'called'] },
   er:             { explanation: "Adding ER to a word means someone who does something — er. Like work becomes worker.",                                                                                                                                                    sound: 'er',        examples: ['worker', 'driver', 'builder'] },
   ly:             { explanation: "Adding LY to a word describes how something is done — ly. Like safe becomes safely.",                                                                                                                                                     sound: 'ly',        examples: ['safely', 'quickly', 'clearly'] },
+  tion_sion:      { explanation: "These endings appear on almost every official form and letter you'll ever read. They always make the same shun sound at the end — station, direction, pension. Once you know this one, long words suddenly get a lot easier.",          sound: 'tion_sion', examples: ['station', 'direction', 'pension'] },
+  ful_less_ness:  { explanation: "Three endings that change the meaning of a word. FUL means full of something — helpful, careful. LESS means without — useless, homeless. NESS turns a word into a thing — illness, darkness. Spot the base word first, then read the ending.", sound: null,   examples: ['helpful', 'useless', 'illness'] },
+  ment:           { explanation: "MENT at the end usually turns a verb into a noun — something you can point to or refer to. Pay becomes payment. Employ becomes employment. You'll see this constantly on contracts, forms, and letters.",                               sound: 'ment',      examples: ['payment', 'employment', 'agreement'] },
   two_syllable:   { explanation: "Longer words are just shorter parts joined together. Break it into two parts, say each one, then put them together.",                                                                                                                     sound: null,        examples: ['for-klift', 'pay-ment', 'hel-met'] },
   three_syllable: { explanation: "This one has three parts. Say each part slowly, then put them together.",                                                                                                                                                                 sound: null,        examples: ['in-duc-tion', 'to-mor-row', 'hos-pi-tal'] },
   four_syllable:  { explanation: "Four parts this time. Take it slowly — each part on its own first, then put it all together.",                                                                                                                                            sound: null,        examples: ['com-mu-ni-ca-tion', 'or-gan-i-sa-tion'] },
   general:        { explanation: "These are words you'll see every day — on your phone, on forms, on signs. Some of them follow the rules you already know. Some don't. We'll take them one at a time.",                                                                   sound: null,        examples: [] },
+  silent_letters: { explanation: "Some words have letters that are written but never said. K is silent before N — knife, know, knock. W is silent before R — write, wrap, wrong. G is sometimes silent — sign, design. These don't follow a sound rule, but once you've seen them a few times they stick.", sound: null, examples: ['knife', 'write', 'sign'] },
+  soft_c_g:       { explanation: "The letters C and G have two sounds each. Before E, I, or Y — C makes an S sound and G makes a J sound. City, centre, giant, age. Before anything else they make their hard sounds — cat, got. The vowel after them is the clue.",    sound: null,        examples: ['city', 'centre', 'giant'] },
 };
 
 // PLACEHOLDER: These TTS approximations will be replaced with pre-recorded
@@ -311,30 +353,40 @@ const RULE_INTRO_SCRIPTS = {
 // public/sounds/ named sound_[pattern].mp3 e.g. sound_short_a.mp3
 // When files exist, serve them directly instead of calling TTS for the sound step.
 const SOUND_TTS_MAP = {
-  short_a:  'ah',
-  short_i:  'ih',
-  short_o:  'oh',
-  short_u:  'uh',
-  short_e:  'eh',
-  sh:       'shh',
-  th:       'th',
-  ch:       'chh',
-  ck:       'k',
-  a_e:      'ay',
-  i_e:      'eye',
-  o_e:      'oh',
-  u_e:      'you',
-  ai_ay:    'ay',
-  ea_ee:    'ee',
-  oa_ow:    'oh',
-  oo:       'oo',
-  ar:       'ar',
-  or:       'or',
-  er_ir_ur: 'er',
-  er:       'er',
-  ing:      'ing',
-  ed:       'ed',
-  ly:       'lee',
+  short_a:       'ah',
+  short_i:       'ih',
+  short_o:       'oh',
+  short_u:       'uh',
+  short_e:       'eh',
+  sh:            'shh',
+  th:            'th',
+  ch:            'chh',
+  ck:            'k',
+  wh:            'w',
+  ph:            'f',
+  ng_end:        'ng',
+  a_e:           'ay',
+  i_e:           'eye',
+  o_e:           'oh',
+  u_e:           'you',
+  ai_ay:         'ay',
+  ea_ee:         'ee',
+  oa_ow:         'oh',
+  oo:            'oo',
+  oo_short:      'uh-oo',
+  igh:           'eye',
+  ou_ow:         'ow',
+  oi_oy:         'oy',
+  au_aw:         'aw',
+  ar:            'ar',
+  or:            'or',
+  er_ir_ur:      'er',
+  er:            'er',
+  ing:           'ing',
+  ed:            'ed',
+  ly:            'lee',
+  tion_sion:     'shun',
+  ment:          'ment',
 };
 
 function preprocessTTSText(soundKey) {
@@ -345,11 +397,14 @@ function preprocessTTSText(soundKey) {
 }
 
 // Returns the pre-recorded sound file as a Buffer if it exists, otherwise null.
-// Drop a file into public/sounds/sound_[pattern].mp3 and it is used automatically
+// Checks for .m4a first (recorded files), then .mp3 (legacy).
+// Drop a file into public/sounds/sound_[pattern].m4a and it is used automatically
 // — no code change needed.
 function checkForRecordedSound(pattern) {
-  const filePath = join(__dirname, 'public', 'sounds', `sound_${pattern}.mp3`);
-  if (existsSync(filePath)) return readFileSync(filePath);
+  for (const ext of ['m4a', 'mp3']) {
+    const filePath = join(__dirname, 'public', 'sounds', `sound_${pattern}.${ext}`);
+    if (existsSync(filePath)) return readFileSync(filePath);
+  }
   return null;
 }
 
@@ -400,57 +455,33 @@ function getBaselineProgress(user) {
   catch(e) { return { wordIndex: 0, results: [] }; }
 }
 
-// Quick teaching judgement — same generous Whisper-aware logic as the baseline version.
-// Returns 'correct' if the transcript clearly contains the target word, null otherwise.
-function judgeTeaching_quick(transcript, targetWord) {
-  return judgeBaseline_quick(transcript, targetWord);
-}
-
 function saveBaselineProgress(userId, progress) {
   db.prepare('UPDATE users SET baseline_progress = ? WHERE id = ?')
     .run(JSON.stringify(progress), userId);
 }
 
 // Quick string match — returns 'correct' or null (uncertain, needs GPT-4o judgement)
-// Generous by design: Whisper often returns "I said cat", "Cat.", "the cat", "um, cat"
-// when the user simply said "cat". We catch all of these here before calling GPT-4o.
 function judgeBaseline_quick(transcript, targetWord) {
   const norm   = normalizeWord(transcript);
   const target = normalizeWord(targetWord);
-  if (!target) return null;
-  // Exact match after stripping punctuation/case
   if (norm === target) return 'correct';
-  // Target appears anywhere as a whole word in the normalised transcript
-  // e.g. "I said cat" → words = ['i','said','cat'] → includes 'cat'
-  const words = norm.split(/\s+/);
+  // Target appears as an isolated word in a longer transcript (Whisper adds filler)
+  const words = transcript.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
   if (words.includes(target)) return 'correct';
-  // Whisper sometimes returns "Hmm, cat." or "Uh, cat" — target is the last token
-  if (words[words.length - 1] === target) return 'correct';
-  // Whisper sometimes prefixes with "the", "a", "an", "um", "uh", "err"
-  const fillers = new Set(['the','a','an','um','uh','err','oh','so','and','i','said','say','its','it']);
-  const content = words.filter(w => !fillers.has(w));
-  if (content.length === 1 && content[0] === target) return 'correct';
   return null;
 }
 
 // Silent GPT-4o judgement for ambiguous transcripts — returns assessment JSON, no speech
 async function callBaselineJudgement(transcript, targetWord) {
   console.log(`[GPT-4o] callBaselineJudgement — target:"${targetWord}" transcript:"${transcript}"`);
-  const prompt = `Assess whether a non-reader correctly read a word aloud. Return JSON only — no other text.
-
-IMPORTANT — Whisper transcription artefacts to treat as CORRECT:
-- Whisper often adds filler words: "Um, cat", "I said cat", "The cat", "Uh, cat." — all correct if the target word is clearly present
-- Whisper sometimes repeats: "cat cat" — correct
-- Whisper sometimes capitalises: "Cat" — correct
-- Whisper sometimes adds punctuation or trailing sounds that aren't part of the word
-- When in doubt, lean toward CORRECT — it is much worse to discourage a learner who got it right than to let a close attempt through
+  const prompt = `Assess whether a non-reader correctly read a word. Return JSON only — no other text.
 
 Target word: "${targetWord}"
 Whisper transcript: "${transcript}"
 
 {
   "targetWord": "${targetWord}",
-  "heardAs": "<what you think they actually said, ignoring filler>",
+  "heardAs": "<what you think they actually said>",
   "outcome": "correct | close | wrong | unclear",
   "confidence": "high | medium | low",
   "likelyError": "initial_sound | vowel_sound | final_sound | added_sound | omitted_sound | whole_word | unclear | none"
@@ -617,9 +648,6 @@ OUTCOME DEFINITIONS:
 - saved: word has hit the stuck rule (engine will override if needed)
 - null: not responding to a word attempt
 
-WHISPER TRANSCRIPTION — BE LENIENT:
-Whisper often adds filler words, repetition, or phrases like "I said X", "the X", "Um, X", "X X" when the user simply said the target word. Treat any transcript where the target word is clearly present as CORRECT unless there is a genuine sound error. It is much worse to mark a correct attempt as wrong than to let a close one through.
-
 SPEECH RULES — NON-NEGOTIABLE:
 - correct → start with exactly "Yep."
 - close → start with exactly "Almost."
@@ -776,24 +804,11 @@ function upsertWordRecord(userId, word, pattern, phase, isCorrect, newStatus) {
 
 const ASKING_SPEECH = "Shall we move on to the next one, or are you done for today?";
 
-// Transitions to sensecheck (every 2 patterns) or asking (every odd pattern).
-// KEY RULE: we write the NEXT pattern to the DB here, as soon as the current one is done.
-// This means if the user closes the app after "shall we move on?", they won't repeat the
-// same pattern next session — the DB already reflects where they should pick up.
+// Transitions to sensecheck (every 2 patterns) or asking (every odd pattern)
 async function handlePatternComplete(res, state, sessionId, userId, lastWordSpeech) {
   const { phase, pattern, wordList, completedPatterns, patternsCompletedThisSession } = state;
   const newCompleted     = [...completedPatterns, { phase, pattern, wordList }];
   const newPatternsCount = patternsCompletedThisSession + 1;
-
-  // Advance the user's position in the DB to the next pattern now.
-  // The "continue" choice handler will also write this (idempotently), but doing it
-  // here ensures the DB is correct even if the user closes the app before tapping.
-  const next = getNextPattern(phase, pattern);
-  if (next) {
-    db.prepare('UPDATE users SET current_phase = ?, current_pattern = ? WHERE id = ?')
-      .run(next.phase, next.pattern, userId);
-    console.log(`[handlePatternComplete] DB advanced → ${next.phase}/${next.pattern}`);
-  }
 
   if (newPatternsCount % 2 === 0) {
     const last2           = newCompleted.slice(-2);
@@ -826,10 +841,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(join(__dirname, 'public')));
-
-app.get('/app', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'app.html'));
-});
 
 // ── Auth: register ─────────────────────────────────────────────────────────────
 app.post('/api/auth/register', (req, res) => {
@@ -1141,11 +1152,7 @@ app.post('/api/session/exchange', requireAuth,
         const currentWord = wordsInRound[currentWordIndex];
         const patternRule = getPatternData(phase, pattern)?.rule ?? '';
 
-        // Quick check before calling GPT-4o — catches common Whisper artefacts
-        const quickResult = judgeTeaching_quick(userTranscript, currentWord);
-        const tutorResult = quickResult === 'correct'
-          ? { speech: FALLBACKS.correct, wordOutcome: 'correct', targetWord: currentWord, nextAction: 'next_word' }
-          : await callTeachingGPT(currentWord, userTranscript, 1, pattern, phase, patternRule);
+        const tutorResult = await callTeachingGPT(currentWord, userTranscript, 1, pattern, phase, patternRule);
         const wordOutcome = tutorResult.wordOutcome === 'saved' ? 'wrong' : tutorResult.wordOutcome;
         const isCorrect   = wordOutcome === 'correct';
 
@@ -1201,11 +1208,7 @@ app.post('/api/session/exchange', requireAuth,
         const attemptNum   = prevAttempts + 1;
         const patternRule  = getPatternData(phase, pattern)?.rule ?? '';
 
-        // Quick check before calling GPT-4o
-        const quickResult = judgeTeaching_quick(userTranscript, currentWord);
-        const tutorResult = quickResult === 'correct'
-          ? { speech: attemptNum > 1 ? FALLBACKS.second_correct : FALLBACKS.correct, wordOutcome: 'correct', targetWord: currentWord, nextAction: 'next_word' }
-          : await callTeachingGPT(currentWord, userTranscript, attemptNum, pattern, phase, patternRule);
+        const tutorResult = await callTeachingGPT(currentWord, userTranscript, attemptNum, pattern, phase, patternRule);
         const isCorrect   = tutorResult.wordOutcome === 'correct';
 
         let newRemaining  = [...remainingStruggling];
@@ -1252,11 +1255,7 @@ app.post('/api/session/exchange', requireAuth,
         const scEntry     = senseCheckWords[senseCheckIndex];
         const patternRule = getPatternData(scEntry.phase, scEntry.pattern)?.rule ?? '';
 
-        // Quick check before calling GPT-4o
-        const quickResult = judgeTeaching_quick(userTranscript, scEntry.word);
-        const tutorResult = quickResult === 'correct'
-          ? { speech: FALLBACKS.correct, wordOutcome: 'correct', targetWord: scEntry.word, nextAction: 'next_word' }
-          : await callTeachingGPT(scEntry.word, userTranscript, 1, scEntry.pattern, scEntry.phase, patternRule);
+        const tutorResult = await callTeachingGPT(scEntry.word, userTranscript, 1, scEntry.pattern, scEntry.phase, patternRule);
         const isCorrect   = tutorResult.wordOutcome === 'correct';
 
         recordAttempt({ userId, sessionId, word: scEntry.word, pattern: scEntry.pattern, phase: scEntry.phase, attemptNumber: 1, transcript: userTranscript, outcome: tutorResult.wordOutcome, confidence: 'high' });
@@ -1326,47 +1325,6 @@ app.get('/api/progress', requireAuth, (req, res) => {
     console.error('progress error:', err);
     res.status(500).json({ error: err.message });
   }
-});
-
-// ── Waitlist ───────────────────────────────────────────────────────────────────
-app.post('/api/waitlist', (req, res) => {
-  const { name, phone } = req.body || {};
-  if (!name || !phone) return res.status(400).json({ error: 'name and phone required' });
-  db.exec(`CREATE TABLE IF NOT EXISTS waitlist (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  db.prepare('INSERT INTO waitlist (name, phone) VALUES (?, ?)').run(name.trim(), phone.trim());
-  res.json({ ok: true });
-});
-
-app.get('/admin/waitlist', (req, res) => {
-  const password = req.query.password;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).send('Unauthorised');
-  }
-  const entries = db.prepare('SELECT name, phone, created_at FROM waitlist ORDER BY created_at DESC').all();
-  const rows = entries.map(e => `
-    <tr>
-      <td>${e.name}</td>
-      <td>${e.phone}</td>
-      <td>${e.created_at}</td>
-    </tr>
-  `).join('');
-  res.send(`
-    <html>
-      <head><title>Waitlist</title></head>
-      <body style="font-family:sans-serif;padding:40px;max-width:600px">
-        <h2>Waitlist (${entries.length})</h2>
-        <table border="1" cellpadding="8" cellspacing="0">
-          <tr><th>Name</th><th>Phone</th><th>Signed up</th></tr>
-          ${rows}
-        </table>
-      </body>
-    </html>
-  `);
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
